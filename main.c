@@ -8,6 +8,7 @@
 #include <sys/socket.h>
 
 #include "misc.h"
+#include "reglib.h"
 
 void usage(FILE *std) {
 	char *usage_message = "Usage %s\n"
@@ -101,7 +102,7 @@ int main (int argc, char* argv[]) {
 				break; // paranoia
 
 			default:
-				break; // paranoia
+				break;
 		}
 	}
 
@@ -112,7 +113,8 @@ int main (int argc, char* argv[]) {
 
 		goto END;
 	}
-	
+
+	// Setting default values to min and max
 	// Min not passed as an argument
 	if (cl_min == NULL) {
 		min = MIN_PORT;
@@ -123,25 +125,25 @@ int main (int argc, char* argv[]) {
 		max = MAX_PORT;
 	}
 
-	if ((regcomp(&preg, ADDRESS_REGEX, REG_EXTENDED)) != 0) {
-		if (asprintf(&message, "Failed to compile ADDRESS_REGEX\n") > 0) {
-			fprintf(stderr, message);
-		}
-
+	// Checks if the ip address is valid ([0-255].[0-255].[0-255].[0-255])
+	if ((reg_match(&preg, ADDRESS_REGEX, REG_EXTENDED, address, nmatch, pmatch, 0, message)) != 0) {
 		status = 1;
 		goto END;
 	}
 
-	if ((regexec(&preg, address, nmatch, pmatch, 0)) != 0) {
-		if (asprintf(&message, "%s is not a valid ip address\n", address) > 0) {
-			fprintf(stderr, message);
-		}
+	// If min was passed as an argument
+	if (cl_min != NULL) {
+		min = atoi(cl_min);
+	}
 
-		status = 1;
-		goto END;
+	// If max was passed as an argument
+	if (cl_max != NULL) {
+		max = atoi(cl_max);
 	}
 
 	fprintf(stdout, "Your ip address : %s\n", address);
+	fprintf(stdout, "Max : %d, min : %d\n", max, min);
+
 	regfree(&preg);
 
 	// Allows to free memory without having a mess(free() and return everywhere)
