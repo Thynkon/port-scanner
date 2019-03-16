@@ -32,6 +32,7 @@ int main (int argc, char* argv[]) {
 
 	char *address = NULL;
 	char *message = NULL;
+	char *regex_name = NULL;
 	// Min and max before being converted to int, this allows to check if they match the regex(only strings)
 	// cl_min = mix value entered from the command line
 	char *cl_min = NULL;
@@ -125,11 +126,21 @@ int main (int argc, char* argv[]) {
 		max = MAX_PORT;
 	}
 
+	if (asprintf(&regex_name, "address regex") < 0) {
+		fprintf(stderr, "Asprintf for regex_name failed\n");
+		status = 1;
+
+		goto END;
+	}
+
 	// Checks if the ip address is valid ([0-255].[0-255].[0-255].[0-255])
-	if ((reg_match(&preg, ADDRESS_REGEX, REG_EXTENDED, address, nmatch, pmatch, 0, message)) != 0) {
+	if ((reg_match(&preg, ADDRESS_REGEX, REG_EXTENDED, address, nmatch, pmatch, 0, message, regex_name)) != 0) {
 		status = 1;
 		goto END;
 	}
+
+	free(regex_name);
+	regex_name = NULL;
 
 	// If min was passed as an argument
 	if (cl_min != NULL) {
@@ -152,6 +163,11 @@ int main (int argc, char* argv[]) {
 	if (message != NULL) {
 		free(message);
 		message = NULL;
+	}
+
+	if (regex_name != NULL) {
+		free(regex_name);
+		regex_name = NULL;
 	}
 
 	if (address != NULL) {
