@@ -8,7 +8,6 @@
 #include <sys/socket.h>
 
 #include "misc.h"
-#include "reglib.h"
 
 void usage(FILE *std) {
 	char *usage_message = "Usage %s\n"
@@ -19,7 +18,6 @@ void usage(FILE *std) {
 
 	fprintf(std, usage_message, PROGRAM_NAME, MAX_PORT);
 }
-
 
 int main (int argc, char* argv[]) {
 	int min = 0;
@@ -115,47 +113,70 @@ int main (int argc, char* argv[]) {
 		goto END;
 	}
 
-	// Setting default values to min and max
-	// Min not passed as an argument
-	if (cl_min == NULL) {
+	if ((regcomp(&preg, ADDRESS_REGEX, REG_EXTENDED)) != 0) {
+		if (asprintf(&message, "Failed to compile address regex\n") > 0) {
+			fprintf(stderr, message);
+		}
+
+		status = 1;
+		goto END;
+	}
+
+	if ((regexec(&preg, address, nmatch, pmatch, 0)) != 0) {
+		if (asprintf(&message, "%s is not a valid ip adress\n", address) > 0) {
+			fprintf(stderr, message);
+		}
+
+		status = 1;
+		goto END;
+	}
+	regfree(&preg);
+
+	if (cl_min != NULL || cl_max != NULL) {
+		if ((regcomp(&preg, PORT_REGEX, REG_EXTENDED)) != 0) {
+			if (asprintf(&message, "Failed to compile port regex\n") > 0) {
+				fprintf(stderr, message);
+			}
+
+			status = 1;
+			goto END;
+		}
+	}
+
+	if (cl_min != NULL) {
+		if ((regexec(&preg, cl_min, nmatch, pmatch, 0)) != 0) {
+			if (asprintf(&message, "%s is not between 1 and 65534\n", cl_min) > 0) {
+				fprintf(stderr, message);
+			}
+
+			status = 1;
+			goto END;
+		}
+
+		min = atoi(cl_min);
+	} else {
 		min = MIN_PORT;
 	}
 
-	// Max not passed as an argument
-	if (cl_max == NULL) {
+	if (cl_max != NULL) {
+		if ((regexec(&preg, cl_max, nmatch, pmatch, 0)) != 0) {
+			if (asprintf(&message, "%s is not between 1 and 65534\n", cl_max) > 0) {
+				fprintf(stderr, message);
+			}
+
+			status = 1;
+			goto END;
+		}
+
+		max = atoi(cl_max);
+	} else {
 		max = MAX_PORT;
 	}
 
-	if (asprintf(&regex_name, "address regex") < 0) {
-		fprintf(stderr, "Asprintf for regex_name failed\n");
-		status = 1;
-
-		goto END;
-	}
-
-	// Checks if the ip address is valid ([0-255].[0-255].[0-255].[0-255])
-	if ((reg_match(&preg, ADDRESS_REGEX, REG_EXTENDED, address, nmatch, pmatch, 0, message, regex_name)) != 0) {
-		status = 1;
-		goto END;
-	}
-
-	free(regex_name);
-	regex_name = NULL;
-
-	// If min was passed as an argument
-	if (cl_min != NULL) {
-		min = atoi(cl_min);
-	}
-
-	// If max was passed as an argument
-	if (cl_max != NULL) {
-		max = atoi(cl_max);
-	}
+	regfree(&preg);
 
 	fprintf(stdout, "Your ip address : %s\n", address);
 	fprintf(stdout, "Max : %d, min : %d\n", max, min);
-
-	regfree(&preg);
 
 	// Allows to free memory without having a mess(free() and return everywhere)
 	END:
