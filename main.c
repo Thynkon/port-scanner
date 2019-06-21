@@ -217,8 +217,8 @@ int main (int argc, char* argv[]) {
 			}
 			break;
 
-		case 2: // One port mode
-			if ((regcomp(&preg, ONE_PORT_MODE, REG_EXTENDED)) != 0) {
+		case 2: // Single port mode
+			if ((regcomp(&preg, SINGLE_PORT_MODE, REG_EXTENDED)) != 0) {
 				if (asprintf(&message, "Failed to compile address regex\n") > 0) {
 					fprintf(stderr, message);
 				}
