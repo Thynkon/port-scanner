@@ -16,12 +16,12 @@
 #include "misc.h"
 
 void usage(FILE *std) {
-	char *usage_message = "%sUsage\n"
-			"-a [--address]\t\tAdress to scan - from 0.0.0.0 to 255.255.255.255\n"
+	char *usage_message = "%s usage\n"
+			"-a [--address]\t\tAdress to scan (from 0.0.0.0 to 255.255.255.255)\n"
 			"-h [--help]\t\tDisplay this message\n"
-			"-m [--min]\t\tMin value of the ports range to scan (min = 1)\n"
+			"-m [--min]\t\tMin value of the ports range to scan (from 1)\n"
 			"-M [--max]\t\tMax value of the ports range to scan (up to %d)\n"
-			"-p [--port]\t\tIp address with the port to scan\n";
+			"-p [--port]\t\tIp address with the port to scan (x.x.x.x:p)\n";
 
 	fprintf(std, usage_message, PROGRAM_NAME, MAX_PORT);
 }
