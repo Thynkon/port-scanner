@@ -8,10 +8,15 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
+#include <errno.h>
+
+/* close() function  */
+#include <unistd.h>
+
 #include "misc.h"
 
 void usage(FILE *std) {
-	char *usage_message = "Usage %s\n"
+	char *usage_message = "%sUsage\n"
 			"-a [--address]\t\tAdress to scan - from 0.0.0.0 to 255.255.255.255\n"
 			"-h [--help]\t\tDisplay this message\n"
 			"-m [--min]\t\tMin value of the ports range to scan (min = 1)\n"
@@ -28,21 +33,26 @@ int main (int argc, char* argv[]) {
 	int status = 0;
 	int mode = 0;
 
-	int port = 0;
-
 	int option = 0;
 	int option_index = 0;
 
+	int open_ports = 0;
+
+	int socket_fd = 0;
+
 	char *address = NULL;
-	char *one_port_mode_address = NULL;
+	char *single_port_mode_address = NULL;
 	char *message = NULL;
 	char *regex_name = NULL;
+	const char delimiter[] = ":";
 	// Min and max before being converted to int, this allows to check if they match the regex(only strings)
 	// cl_min = mix value entered from the command line
 	char *cl_min = NULL;
 	char *cl_max = NULL;
 
 	size_t nmatch = 4;
+
+	struct sockaddr_in client_socket;
 
 	regex_t preg;
 	regmatch_t pmatch[nmatch];
@@ -101,7 +111,7 @@ int main (int argc, char* argv[]) {
 				break; // paranoia
 
 			case 'p':
-				if ((one_port_mode_address = strdup(optarg)) == NULL) {
+				if ((single_port_mode_address = strdup(optarg)) == NULL) {
 					fprintf(stderr, "Strdup failed!\n");
 
 					status = 1;
@@ -153,6 +163,8 @@ int main (int argc, char* argv[]) {
 			}
 			regfree(&preg);
 
+			// If at least one port limit was given by the user, then I compile PORT_REGEX
+			// By doing this, the program uses less memory (don't compile the regex if both ports limits weren't specified)
 			if (cl_min != NULL || cl_max != NULL) {
 				if ((regcomp(&preg, PORT_REGEX, REG_EXTENDED)) != 0) {
 					if (asprintf(&message, "Failed to compile port regex\n") > 0) {
@@ -227,8 +239,8 @@ int main (int argc, char* argv[]) {
 				goto END;
 			}
 
-			if ((regexec(&preg, one_port_mode_address, nmatch, pmatch, 0)) != 0) {
-				if (asprintf(&message, "%s is not a valid sadlkfjslajkfksl ip adress\n", address) > 0) {
+			if ((regexec(&preg, single_port_mode_address, nmatch, pmatch, 0)) != 0) {
+				if (asprintf(&message, "%s is not a valid ip adress\n", address) > 0) {
 					fprintf(stderr, message);
 				}
 
@@ -236,10 +248,61 @@ int main (int argc, char* argv[]) {
 				goto END;
 			}
 			regfree(&preg);
+
+			address = strtok(single_port_mode_address, delimiter);
+
+			min = atoi(strtok(NULL, delimiter));
+			max = min;
 			break;
 
 		default:
 			break;
+	}
+
+	client_socket.sin_family = AF_INET;
+
+	// Setting socket ip address
+	if (inet_pton(AF_INET, address, &client_socket.sin_addr) <= 0) {
+		printf("\nInvalid address/ Address not supported \n");
+
+		status = 1;
+		goto END;
+	}
+
+	if (asprintf(&message, "PORT\tSTATE\n") > 0) {
+		fprintf(stdout, message);
+		free(message);
+		message = NULL;
+	}
+
+	// Connecting to each port
+	for (int port = min; port <= max; port++) {
+		if ((socket_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
+			perror("Error");
+
+			status = 1;
+			goto END;
+		}
+
+		client_socket.sin_port = htons(port);
+
+		if (connect(socket_fd, (struct sockaddr *) &client_socket, sizeof(client_socket)) == 0) {
+			if (asprintf(&message, "%d\topen\n", port) > 0) {
+				fprintf(stdout, message);
+			}
+
+			open_ports++;
+		}
+		close(socket_fd);
+	}
+
+	if (open_ports == 0) {
+		if (asprintf(&message, "All specified ports are closed\n")) {
+			fprintf(stdout, message);
+
+			free(message);
+			message = NULL;
+		}
 	}
 
 	// Allows to free memory without having a mess(free() and return everywhere)
