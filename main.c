@@ -10,10 +10,76 @@
 
 #include <errno.h>
 
-/* close() function  */
+/* close() function */
 #include <unistd.h>
 
 #include "misc.h"
+
+int append_node(struct node *tmp, int value) {
+	struct node *current = NULL;
+	char *message = NULL;
+
+	if (count_node(tmp) == 1) {
+		tmp->data = value;
+
+		return 0;
+	}
+
+	current = tmp->next;
+	while (current->next != NULL) {
+		current = current->next;
+	}
+
+	if ((current->next = malloc(sizeof(struct node))) == NULL) {
+		if (asprintf(&message, "Error : append node operation failed!\n") > 0) {
+			fprintf(stderr, "%s", message);
+
+			free(message);
+			message = NULL;
+
+			return -1;
+		}
+	}
+
+	current->next->data = value;
+	current->next->next = NULL;
+
+	return 0;
+}
+
+int count_node(struct node *tmp) {
+	int number_nodes = 0;
+	struct node *current = NULL;
+
+	current = tmp;
+	while (current != NULL) {
+		number_nodes++;
+		current = current->next;
+	}
+
+	return number_nodes;
+}
+
+void print_nodes(struct node *tmp) {
+	struct node *current = NULL;
+	char *message = NULL;
+
+	current = tmp;
+
+	if (asprintf(&message, "PORT\tSTATE\n") > 0) {
+		fprintf(stdout, message);
+		free(message);
+		message = NULL;
+	}
+
+	while (current != NULL) {
+		if (asprintf(&message, "%d\topen\n", current->data) > 0) {
+			fprintf(stdout, "%s", message);
+		}
+		
+		current = current->next;
+	}
+}
 
 void usage(FILE *std) {
 	char *usage_message = "%s usage\n"
@@ -36,8 +102,6 @@ int main (int argc, char* argv[]) {
 	int option = 0;
 	int option_index = 0;
 
-	int open_ports = 0;
-
 	int socket_fd = 0;
 
 	char *address = NULL;
@@ -52,6 +116,7 @@ int main (int argc, char* argv[]) {
 
 	size_t nmatch = 4;
 
+	struct node *port_list = NULL;
 	struct sockaddr_in client_socket;
 
 	regex_t preg;
@@ -269,11 +334,17 @@ int main (int argc, char* argv[]) {
 		goto END;
 	}
 
-	if (asprintf(&message, "PORT\tSTATE\n") > 0) {
-		fprintf(stdout, message);
-		free(message);
-		message = NULL;
+	if ((port_list = malloc(sizeof(struct node))) == NULL) {
+		if (asprintf(&message, "Failed to allocate memory for port list\n") > 0) {
+			fprintf(stderr, "%s", message);
+
+			status = -1;
+			goto END;
+		}
 	}
+
+	/* This allows me to test if one port was added to port_list */
+	port_list->data = -1;
 
 	// Connecting to each port
 	for (int port = min; port <= max; port++) {
@@ -287,22 +358,20 @@ int main (int argc, char* argv[]) {
 		client_socket.sin_port = htons(port);
 
 		if (connect(socket_fd, (struct sockaddr *) &client_socket, sizeof(client_socket)) == 0) {
-			if (asprintf(&message, "%d\topen\n", port) > 0) {
-				fprintf(stdout, message);
-			}
-
-			open_ports++;
+			append_node(port_list, port);
 		}
 		close(socket_fd);
 	}
 
-	if (open_ports == 0) {
+	if (port_list->data < 0) {
 		if (asprintf(&message, "All specified ports are closed\n")) {
 			fprintf(stdout, message);
 
 			free(message);
 			message = NULL;
 		}
+	} else {
+		print_nodes(port_list);
 	}
 
 	// Allows to free memory without having a mess(free() and return everywhere)
