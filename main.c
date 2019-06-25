@@ -76,8 +76,22 @@ void print_nodes(struct node *tmp) {
 		if (asprintf(&message, "%d\topen\n", current->data) > 0) {
 			fprintf(stdout, "%s", message);
 		}
-		
+
 		current = current->next;
+
+		free(message);
+		message = NULL;
+	}
+}
+
+void delete_nodes(struct node *tmp) {
+	struct node *current = NULL;
+
+	current = tmp;
+
+	while (current != NULL) {
+		free(current);
+		current = NULL;
 	}
 }
 
@@ -372,6 +386,7 @@ int main (int argc, char* argv[]) {
 		}
 	} else {
 		print_nodes(port_list);
+		delete_nodes(port_list);
 	}
 
 	// Allows to free memory without having a mess(free() and return everywhere)
