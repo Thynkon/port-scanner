@@ -11,14 +11,6 @@
 #define MIN_PORT 1
 #define MAX_PORT 65534
 
-struct node {
-	int data;
-	struct node *next;
-};
-
-int append_node(struct node **list, int data);
-void print_nodes(struct node **tmp);
-void delete_nodes(struct node **tmp);
 void usage(FILE* std);
 
 #endif
