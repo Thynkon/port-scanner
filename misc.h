@@ -16,9 +16,9 @@ struct node {
 	struct node *next;
 };
 
-int append_node(struct node *tmp, int value);
-int count_node(struct node *tmp);
-void print_nodes(struct node *tmp);
+int append_node(struct node **list, int data);
+void print_nodes(struct node **tmp);
+void delete_nodes(struct node **tmp);
 void usage(FILE* std);
 
 #endif

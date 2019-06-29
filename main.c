@@ -15,56 +15,45 @@
 
 #include "misc.h"
 
-int append_node(struct node *tmp, int value) {
-	struct node *current = NULL;
-	char *message = NULL;
+int append_node(struct node **list, int data) {
+	char *msg = NULL;
+    struct node* new_node = NULL;
+    struct node *last = NULL;
 
-	if (count_node(tmp) == 1) {
-		tmp->data = value;
+	if ((new_node = malloc(sizeof(struct node))) == NULL) {
+			if (asprintf(&msg, "Failed to compile address regex\n") > 0) {
+				fprintf(stderr, msg);
 
-		return 0;
-	}
-
-	current = tmp->next;
-	while (current->next != NULL) {
-		current = current->next;
-	}
-
-	if ((current->next = malloc(sizeof(struct node))) == NULL) {
-		if (asprintf(&message, "Error : append node operation failed!\n") > 0) {
-			fprintf(stderr, "%s", message);
-
-			free(message);
-			message = NULL;
+				free(msg);
+				msg = NULL;
+			}
 
 			return -1;
-		}
 	}
 
-	current->next->data = value;
-	current->next->next = NULL;
+    new_node->data  = data;
+    new_node->next = NULL;
 
-	return 0;
-}
+	/* If the list is empty then add node */
+    if (*list == NULL) {
+       *list = new_node;
+       return 0;
+    }
 
-int count_node(struct node *tmp) {
-	int number_nodes = 0;
-	struct node *current = NULL;
-
-	current = tmp;
-	while (current != NULL) {
-		number_nodes++;
-		current = current->next;
+	last = *list;
+    while (last->next != NULL) {
+        last = last->next;
 	}
 
-	return number_nodes;
+    last->next = new_node;
+    return 0;
 }
 
-void print_nodes(struct node *tmp) {
+void print_nodes(struct node **tmp) {
 	struct node *current = NULL;
 	char *message = NULL;
 
-	current = tmp;
+	current = (*tmp);
 
 	if (asprintf(&message, "PORT\tSTATE\n") > 0) {
 		fprintf(stdout, message);
@@ -84,15 +73,19 @@ void print_nodes(struct node *tmp) {
 	}
 }
 
-void delete_nodes(struct node *tmp) {
+void delete_nodes(struct node **list) {
 	struct node *current = NULL;
+	struct node *next = NULL;
 
-	current = tmp;
+	current = *list;
 
 	while (current != NULL) {
+		next = current->next;
 		free(current);
-		current = NULL;
+		current = next;
 	}
+
+	*list = NULL;
 }
 
 void usage(FILE *std) {
@@ -348,18 +341,6 @@ int main (int argc, char* argv[]) {
 		goto END;
 	}
 
-	if ((port_list = malloc(sizeof(struct node))) == NULL) {
-		if (asprintf(&message, "Failed to allocate memory for port list\n") > 0) {
-			fprintf(stderr, "%s", message);
-
-			status = -1;
-			goto END;
-		}
-	}
-
-	/* This allows me to test if one port was added to port_list */
-	port_list->data = -1;
-
 	// Connecting to each port
 	for (int port = min; port <= max; port++) {
 		if ((socket_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
@@ -372,12 +353,19 @@ int main (int argc, char* argv[]) {
 		client_socket.sin_port = htons(port);
 
 		if (connect(socket_fd, (struct sockaddr *) &client_socket, sizeof(client_socket)) == 0) {
-			append_node(port_list, port);
+			if (append_node(&port_list, port) < 0) {
+				if (asprintf(&message, "Error : failed to add port to list\n")) {
+					fprintf(stdout, message);
+
+					free(message);
+					message = NULL;
+				}
+			}
 		}
 		close(socket_fd);
 	}
 
-	if (port_list->data < 0) {
+	if (port_list == NULL) {
 		if (asprintf(&message, "All specified ports are closed\n")) {
 			fprintf(stdout, message);
 
@@ -385,8 +373,8 @@ int main (int argc, char* argv[]) {
 			message = NULL;
 		}
 	} else {
-		print_nodes(port_list);
-		delete_nodes(port_list);
+		print_nodes(&port_list);
+		delete_nodes(&port_list);
 	}
 
 	// Allows to free memory without having a mess(free() and return everywhere)
