@@ -12,7 +12,7 @@ int append_node(struct node **list, int data) {
 
 	if ((new_node = malloc(sizeof(struct node))) == NULL) {
 		if (asprintf(&msg, "Failed to compile address regex\n") > 0) {                
-			fprintf(stderr, msg);
+			fprintf(stderr, "%s", msg);
 
 			free(msg);
 			msg = NULL;
@@ -61,7 +61,7 @@ void print_nodes(struct node **tmp) {
 	current = (*tmp);
 
 	if (asprintf(&message, "PORT\tSTATE\n") > 0) {
-		fprintf(stdout, message);
+		fprintf(stderr, "%s", message);
 		free(message);
 		message = NULL;
 	}

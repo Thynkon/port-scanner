@@ -146,7 +146,7 @@ int main (int argc, char* argv[]) {
 		case 1:
 			if ((regcomp(&preg, ADDRESS_REGEX, REG_EXTENDED)) != 0) {
 				if (asprintf(&message, "Failed to compile address regex\n") > 0) {
-					fprintf(stderr, message);
+					fprintf(stderr, "%s", message);
 				}
 
 				status = 1;
@@ -155,7 +155,7 @@ int main (int argc, char* argv[]) {
 
 			if ((regexec(&preg, address, nmatch, pmatch, 0)) != 0) {
 				if (asprintf(&message, "%s is not a valid ip adress\n", address) > 0) {
-					fprintf(stderr, message);
+					fprintf(stderr, "%s", message);
 				}
 
 				status = 1;
@@ -168,7 +168,7 @@ int main (int argc, char* argv[]) {
 			if (cl_min != NULL || cl_max != NULL) {
 				if ((regcomp(&preg, PORT_REGEX, REG_EXTENDED)) != 0) {
 					if (asprintf(&message, "Failed to compile port regex\n") > 0) {
-						fprintf(stderr, message);
+						fprintf(stderr, "%s", message);
 					}
 
 					status = 1;
@@ -179,7 +179,7 @@ int main (int argc, char* argv[]) {
 			if (cl_min != NULL) {
 				if ((regexec(&preg, cl_min, nmatch, pmatch, 0)) != 0) {
 					if (asprintf(&message, "%s is not between 1 and 65534\n", cl_min) > 0) {
-						fprintf(stderr, message);
+						fprintf(stderr, "%s", message);
 					}
 
 					status = 1;
@@ -194,7 +194,7 @@ int main (int argc, char* argv[]) {
 			if (cl_max != NULL) {
 				if ((regexec(&preg, cl_max, nmatch, pmatch, 0)) != 0) {
 					if (asprintf(&message, "%s is not between 1 and 65534\n", cl_max) > 0) {
-						fprintf(stderr, message);
+						fprintf(stderr, "%s", message);
 					}
 
 					status = 1;
@@ -210,14 +210,14 @@ int main (int argc, char* argv[]) {
 
 			if (min > max) {
 				if (asprintf(&message, "Min value is bigger than max value\n") > 0) {
-					fprintf(stderr, message);
+					fprintf(stderr, "%s", message);
 				}
 
 				status = 1;
 				goto END;
 			} else if (min == max) {
 				if (asprintf(&message, "Min and max have the same value\nIf you want to scan only one port use the -p option\n\n") > 0) {
-					fprintf(stderr, message);
+					fprintf(stderr, "%s", message);
 				}
 
 				usage(stdout);
@@ -232,7 +232,7 @@ int main (int argc, char* argv[]) {
 		case 2: // Single port mode
 			if ((regcomp(&preg, SINGLE_PORT_MODE, REG_EXTENDED)) != 0) {
 				if (asprintf(&message, "Failed to compile address regex\n") > 0) {
-					fprintf(stderr, message);
+					fprintf(stderr, "%s", message);
 				}
 
 				status = 1;
@@ -241,7 +241,7 @@ int main (int argc, char* argv[]) {
 
 			if ((regexec(&preg, single_port_mode_address, nmatch, pmatch, 0)) != 0) {
 				if (asprintf(&message, "%s is not a valid ip adress\n", address) > 0) {
-					fprintf(stderr, message);
+					fprintf(stderr, "%s", message);
 				}
 
 				status = 1;
@@ -283,7 +283,7 @@ int main (int argc, char* argv[]) {
 		if (connect(socket_fd, (struct sockaddr *) &client_socket, sizeof(client_socket)) == 0) {
 			if (append_node(&port_list, port) < 0) {
 				if (asprintf(&message, "Error : failed to add port to list\n")) {
-					fprintf(stdout, message);
+					fprintf(stderr, "%s", message);
 
 					free(message);
 					message = NULL;
@@ -295,7 +295,7 @@ int main (int argc, char* argv[]) {
 
 	if (port_list == NULL) {
 		if (asprintf(&message, "All specified ports are closed\n")) {
-			fprintf(stdout, message);
+			fprintf(stderr, "%s", message);
 
 			free(message);
 			message = NULL;
