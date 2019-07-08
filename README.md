@@ -1,7 +1,7 @@
 # port-scanner
 port-scanner, as it name means, it is a simple port scanner written in C using the standard libraries.
 
-# Usage
+## Usage
 
 * Scan all ports from 20 to 40
 
@@ -22,3 +22,8 @@ port-scanner, as it name means, it is a simple port scanner written in C using t
 * Display help
 
         port-scanner -h
+
+## Installation
+UNIX like
+
+        make
