@@ -27,3 +27,6 @@ port-scanner, as it name means, it is a simple port scanner written in C using t
 UNIX like
 
         make
+
+## License
+This programm is under the [MIT License](LICENSE).
